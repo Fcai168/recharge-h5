@@ -39,6 +39,49 @@ const DEFAULT_CONFIG = {
   ]
 };
 
+// Supabase 远程数据缓存
+let _remoteConfig = null;
+let _remoteOrders = null;
+
+// Supabase 数据库配置（snake_case）→ 前端配置（camelCase）
+function dbConfigToJsConfig(db) {
+  return {
+    logo: db.logo || '',
+    banner: db.banner || '',
+    announcement: db.announcement || DEFAULT_CONFIG.announcement,
+    wechatQR: db.wechat_qr || '',
+    alipayQR: db.alipay_qr || '',
+    customerService: db.customer_service || '',
+    customerServiceText: db.customer_service_text || '联系在线客服',
+    discountRate: db.discount_rate || 0.85,
+    amounts: db.amounts || JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts))
+  };
+}
+
+// 从 Supabase 加载远程配置和订单
+async function loadRemoteData() {
+  if (typeof USE_SUPABASE === 'undefined' || !USE_SUPABASE) return;
+  try {
+    const dbCfg = await dbGetConfig();
+    if (dbCfg) _remoteConfig = dbConfigToJsConfig(dbCfg);
+  } catch (e) { console.error('[Supabase] 配置加载失败:', e); }
+  try {
+    const dbOrders = await dbListOrders();
+    _remoteOrders = dbOrders.map(o => ({
+      id: o.id,
+      phone: o.phone,
+      amount: o.amount,
+      actualPay: o.actual_pay,
+      discountRate: o.discount_rate,
+      payMethod: o.pay_method,
+      status: o.status,
+      voucher: o.voucher,
+      createdAt: o.created_at,
+      updatedAt: o.updated_at
+    }));
+  } catch (e) { console.error('[Supabase] 订单加载失败:', e); }
+}
+
 // ---------- 工具 ----------
 function $(id) { return document.getElementById(id); }
 function toast(msg, type) {
@@ -48,6 +91,9 @@ function toast(msg, type) {
   setTimeout(() => el.classList.remove('show'), 2000);
 }
 function getConfig() {
+  if (_remoteConfig) {
+    return { ...DEFAULT_CONFIG, ..._remoteConfig, amounts: _remoteConfig.amounts || JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
     if (!raw) return { ...DEFAULT_CONFIG, amounts: JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
@@ -61,6 +107,7 @@ function setConfig(cfg) {
   localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(cfg));
 }
 function getOrders() {
+  if (_remoteOrders) return _remoteOrders;
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS) || '[]'); }
   catch (e) { return []; }
 }
@@ -136,7 +183,8 @@ function switchPage(name, el) {
 }
 
 // ---------- 初始化 ----------
-function initAdmin() {
+async function initAdmin() {
+  await loadRemoteData();
   loadConfigToForm();
   renderDashboard();
   renderOrders();
@@ -293,23 +341,46 @@ function saveConfig() {
   }
 
   setConfig(cfg);
-  toast('设置已保存', 'success');
+  _remoteConfig = cfg;
+  // 同步到 Supabase 数据库（全局生效，所有用户可见）
+  if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
+    dbUpdateConfig(cfg).then(() => {
+      toast('设置已保存到数据库', 'success');
+    }).catch(err => {
+      console.error('[Supabase] 配置同步失败:', err);
+      toast('本地已保存，数据库同步失败', 'error');
+    });
+  } else {
+    toast('设置已保存', 'success');
+  }
 }
 
 // ---------- 数据统计 ----------
-function renderDashboard() {
+async function renderDashboard() {
+  let stats = null;
+  if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
+    try { stats = await dbGetStats(); } catch(e) { console.error('[Supabase] 统计加载失败:', e); }
+  }
   const orders = getOrders();
-  const today = new Date().toDateString();
-  const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
-  const failedOrders = orders.filter(o => o.status === 'failed');
-  const totalAmount = orders.reduce((sum, o) => sum + (o.actualPay || 0), 0);
-  const failRate = orders.length > 0 ? ((failedOrders.length / orders.length) * 100).toFixed(1) : '0.0';
 
-  $('statToday').textContent = todayOrders.length;
-  $('statTotal').textContent = orders.length;
-  $('statAmount').textContent = '¥' + totalAmount.toFixed(0);
-  $('statFailed').textContent = failedOrders.length;
-  $('statFailRate').textContent = failRate + '%';
+  if (stats) {
+    $('statToday').textContent = stats.today_orders || 0;
+    $('statTotal').textContent = stats.total_orders || 0;
+    $('statAmount').textContent = '¥' + Number(stats.total_amount || 0).toLocaleString();
+    $('statFailed').textContent = stats.failed_orders || 0;
+    $('statFailRate').textContent = (stats.fail_rate_pct || 0) + '%';
+  } else {
+    const today = new Date().toDateString();
+    const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
+    const failedOrders = orders.filter(o => o.status === 'failed');
+    const totalAmount = orders.reduce((sum, o) => sum + (o.actualPay || 0), 0);
+    const failRate = orders.length > 0 ? ((failedOrders.length / orders.length) * 100).toFixed(1) : '0.0';
+    $('statToday').textContent = todayOrders.length;
+    $('statTotal').textContent = orders.length;
+    $('statAmount').textContent = '¥' + totalAmount.toFixed(0);
+    $('statFailed').textContent = failedOrders.length;
+    $('statFailRate').textContent = failRate + '%';
+  }
 
   // 最近订单
   const recent = orders.slice(0, 5);
@@ -392,7 +463,13 @@ function updateOrderStatus(id, status) {
   if (idx >= 0) {
     orders[idx].status = status;
     orders[idx].updatedAt = new Date().toISOString();
+    if (_remoteOrders) _remoteOrders = orders;
     setOrders(orders);
+    if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
+      dbUpdateOrderStatus(id, status).catch(err =>
+        console.error('[Supabase] 订单状态更新失败:', err)
+      );
+    }
     toast('订单状态已更新', 'success');
     renderOrders();
     renderDashboard();

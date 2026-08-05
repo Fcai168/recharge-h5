@@ -43,11 +43,28 @@ const DEFAULT_CONFIG = {
 function getConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (!raw) return { ...DEFAULT_CONFIG };
+    if (!raw) return _remoteConfig ? { ...DEFAULT_CONFIG, ..._remoteConfig } : { ...DEFAULT_CONFIG };
     return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch (e) {
     return { ...DEFAULT_CONFIG };
   }
+}
+
+// Supabase 数据库配置（snake_case）→ 前端配置（camelCase）
+let _remoteConfig = null;
+let _orderSyncedToDb = false;
+function dbConfigToJsConfig(db) {
+  return {
+    logo: db.logo || '',
+    banner: db.banner || '',
+    announcement: db.announcement || DEFAULT_CONFIG.announcement,
+    wechatQR: db.wechat_qr || '',
+    alipayQR: db.alipay_qr || '',
+    customerService: db.customer_service || '',
+    customerServiceText: db.customer_service_text || '联系在线客服',
+    discountRate: db.discount_rate || 0.85,
+    amounts: db.amounts || JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts))
+  };
 }
 
 // ---------- 全局状态 ----------
@@ -65,8 +82,16 @@ function init() {
   setupUploadDrag();
 }
 
-function loadSiteConfig() {
-  const cfg = getConfig();
+async function loadSiteConfig() {
+  let cfg = null;
+  // 优先从 Supabase 读取配置
+  if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
+    try {
+      const dbCfg = await dbGetConfig();
+      if (dbCfg) { cfg = dbConfigToJsConfig(dbCfg); _remoteConfig = cfg; }
+    } catch (e) { console.error('[Config] 远程配置加载失败，回退本地', e); }
+  }
+  if (!cfg) cfg = getConfig();
 
   // Logo
   if (cfg.logo) {
@@ -159,6 +184,7 @@ function showStep(n) {
 function goHome() {
   // 重置
   state = { phone: '', selectedAmount: null, payMethod: null, voucher: null, orderId: null };
+  _orderSyncedToDb = false;
   localStorage.removeItem(STORAGE_KEY_ORDER);
   document.getElementById('phoneInput').value = '';
   document.getElementById('phoneInput').disabled = false;
@@ -480,6 +506,31 @@ function saveOrder(status) {
   }
   localStorage.setItem(ordersKey, JSON.stringify(orders));
   localStorage.setItem(STORAGE_KEY_ORDER, JSON.stringify(order));
+
+  // 同步写入 Supabase 数据库（后台可查看订单）
+  if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
+    if (!_orderSyncedToDb) {
+      // 首次：INSERT
+      dbCreateOrder({
+        id: order.id,
+        phone: order.phone,
+        amount: order.amount,
+        actualPay: order.actualPay,
+        discountRate: order.discountRate,
+        payMethod: order.payMethod,
+        status: order.status,
+        voucher: order.voucher
+      }).then(() => {
+        _orderSyncedToDb = true;
+        console.log('[Supabase] 订单已写入数据库:', order.id);
+      }).catch(err => console.error('[Supabase] 订单写入失败:', err));
+    } else {
+      // 后续：UPDATE 状态
+      dbUpdateOrderStatus(order.id, order.status).catch(err =>
+        console.error('[Supabase] 订单状态更新失败:', err)
+      );
+    }
+  }
 }
 
 function contactService() {
