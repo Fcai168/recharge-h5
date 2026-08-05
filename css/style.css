@@ -353,6 +353,17 @@ img { max-width: 100%; display: block; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 上传凭证页 - 垂直居中显示 */
+#step-4a.active {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+#step-4a.active > .card {
+  margin-top: 0;
+}
+
 /* ===== 折扣标识 ===== */
 .discount-badge {
   display: inline-flex;
@@ -576,32 +587,48 @@ img { max-width: 100%; display: block; }
 
 /* ===== 上传区域 ===== */
 .upload-area {
-  border: 2px dashed #d8dde3;
-  border-radius: 12px;
-  padding: 32px 16px;
+  border: 2px dashed #c8d4e3;
+  border-radius: 14px;
+  padding: 48px 16px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.2s;
-  background: #fafbfc;
-  margin-bottom: 14px;
+  transition: all 0.25s;
+  background: linear-gradient(180deg, #fafcfd 0%, #f0f5fa 100%);
+  margin-bottom: 18px;
+  position: relative;
+}
+.upload-area::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.5);
+  pointer-events: none;
 }
 .upload-area:active, .upload-area.dragover {
   border-color: #2471a3;
-  background: #f0f7fc;
+  background: linear-gradient(180deg, #f0f7fc 0%, #e6f0f8 100%);
 }
 .upload-area .icon {
-  font-size: 36px;
-  color: #b0b8c1;
-  margin-bottom: 6px;
+  font-size: 56px;
+  color: #2471a3;
+  margin-bottom: 14px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(36,113,163,0.15));
+  position: relative;
 }
 .upload-area .text {
-  color: #5a6b7d;
-  font-size: 13.5px;
-  margin-bottom: 4px;
+  color: #2c3e50;
+  font-size: 14.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+  position: relative;
 }
 .upload-area .hint {
   color: #8a9aab;
-  font-size: 11.5px;
+  font-size: 12px;
+  position: relative;
 }
 .upload-preview {
   position: relative;
@@ -722,7 +749,11 @@ img { max-width: 100%; display: block; }
 /* ===== 结果页 ===== */
 .result-wrap {
   text-align: center;
-  padding: 30px 16px;
+  padding: 60px 16px 40px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .result-icon {
   width: 80px; height: 80px;
