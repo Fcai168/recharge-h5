@@ -152,13 +152,6 @@ function showStep(n) {
   // 展示目标 step
   const target = document.getElementById('step-' + n);
   if (target) target.classList.add('active');
-  // 步骤指示器
-  document.querySelectorAll('#stepIndicator .step').forEach(el => {
-    const s = parseInt(el.dataset.step);
-    el.classList.remove('active', 'done');
-    if (s === n) el.classList.add('active');
-    else if (s < n) el.classList.add('done');
-  });
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -172,6 +165,8 @@ function goHome() {
   document.getElementById('nextBtn1').disabled = true;
   document.getElementById('claimBtn').disabled = false;
   document.getElementById('claimBtn').textContent = '立即领取电子代金券';
+  document.getElementById('claimBtn').style.display = '';
+  document.getElementById('couponClaimedBadge').style.display = 'none';
   setClaimStatus('waiting');
   // 展示 4a 而不是 1（4a 上传页面可以选择）
   // 这里回到首页
@@ -214,11 +209,14 @@ function claimCoupon() {
   btn.textContent = '领取中...';
   setTimeout(() => {
     state.phone = phone;
-    setClaimStatus('success', '领取成功：已获得 50 元电子代金券');
+    setClaimStatus('success', '代金券领取成功！');
     document.getElementById('nextBtn1').disabled = false;
-    document.getElementById('nextBtn1').classList.remove('btn-primary');
-    // 重新启用按钮（状态变化）
-    btn.textContent = '已领取';
+    document.getElementById('nextBtn1').classList.add('btn-primary');
+    // 显示右上角浮动徽章"代金券已领取！"
+    document.getElementById('couponClaimedBadge').style.display = 'flex';
+    // 隐藏领取按钮
+    btn.style.display = 'none';
+    // 手机号输入框变灰
     document.getElementById('phoneInput').disabled = true;
   }, 800);
 }
@@ -294,7 +292,9 @@ function selectAmount(a) {
 
   const cfg = getConfig();
   const price = (a.value * cfg.discountRate).toFixed(0);
-  document.getElementById('sumAmount').textContent = a.value + ' 元';
+  const discount = (a.value - parseFloat(price)).toFixed(0);
+  document.getElementById('sumAmount').textContent = '¥ ' + a.value;
+  document.getElementById('sumDiscount').textContent = '- ¥ ' + discount;
   document.getElementById('sumPay').textContent = '¥ ' + price;
 
   // 检查支付方式是否已选
