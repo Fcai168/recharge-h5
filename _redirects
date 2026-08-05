@@ -1,0 +1,12 @@
+# Cloudflare Pages 路由规则
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+# 后台路径显式化（可选）
+/admin      /admin.html  301
+/login      /admin.html  301
+
+# 默认入口
+/           /index.html  200
+
+# 404 回退到首页（SPA 友好）
+/*          /index.html  404
