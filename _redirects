@@ -1,9 +1,11 @@
 # Cloudflare Pages 路由规则
 # https://developers.cloudflare.com/pages/configuration/redirects/
 
-# 后台路径显式化（可选）
-/admin      /admin.html  301
-/login      /admin.html  301
+# 注意：Cloudflare Pages 默认启用 Clean URLs，会自动将 /admin.html → /admin (308)
+# 不要写 /admin → /admin.html 的重定向，否则会形成无限重定向循环
+
+# /login 跳转到后台（指向 clean URL，避免循环）
+/login      /admin      301
 
 # 默认入口
 /           /index.html  200
