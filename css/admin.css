@@ -679,12 +679,13 @@ td .actions { display: flex; gap: 4px; flex-wrap: wrap; }
     background: #f0f2f5;
     box-shadow: 0 0 40px rgba(0,0,0,0.06);
   }
-  .layout { flex-direction: row; }
+  .layout { flex-direction: row; align-items: stretch; }
   .sidebar {
-    position: static;
+    position: sticky;
+    top: 0;
     width: 220px;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
     box-shadow: none;
   }
   .sidebar .brand {

@@ -95,7 +95,9 @@ async function dbCreateOrder(order) {
 async function dbListOrders(filter = {}) {
   if (!USE_SUPABASE) return [];
   try {
-    let path = 'orders?order=created_at.desc&limit=500';
+    const limit = filter.limit || 50;
+    // 列表不查 voucher（base64 图片太大），详情时单独查
+    let path = 'orders?select=id,phone,amount,actual_pay,discount_rate,pay_method,status,created_at,updated_at&order=created_at.desc&limit=' + limit;
     if (filter.status) path += '&status=eq.' + encodeURIComponent(filter.status);
     if (filter.search) {
       path += '&or=(id.ilike.*' + encodeURIComponent(filter.search) + '*,phone.ilike.*' + encodeURIComponent(filter.search) + '*)';
@@ -103,6 +105,14 @@ async function dbListOrders(filter = {}) {
     const data = await sbFetch(path);
     return data || [];
   } catch (e) { console.error('[Supabase] dbListOrders:', e); return []; }
+}
+
+async function dbGetOrder(id) {
+  if (!USE_SUPABASE) return null;
+  try {
+    const data = await sbFetch('orders?id=eq.' + encodeURIComponent(id) + '&limit=1');
+    return (data && data.length > 0) ? data[0] : null;
+  } catch (e) { console.error('[Supabase] dbGetOrder:', e); return null; }
 }
 
 async function dbUpdateOrderStatus(id, status, failReason) {
