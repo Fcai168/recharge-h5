@@ -39,7 +39,7 @@
   <section class="step active" id="step-1">
     <div class="title-card">
       <h1>易捷油卡充值</h1>
-      <p class="subtitle">电子代金券限时领取</p>
+      <p class="subtitle">中石化电子代金券 · 实时到账</p>
       <p class="features">官方充值服务 | 安全稳定 | 每日限量发放</p>
     </div>
 
@@ -47,32 +47,16 @@
       <!-- 由 JS 渲染 -->
     </div>
 
-    <div class="card" style="position:relative">
-      <!-- 代金券已领取徽章（领取成功后显示） -->
-      <div class="coupon-claimed-badge" id="couponClaimedBadge" style="display:none">
-        <span class="check-icon">✓</span>代金券已领取！
-      </div>
-
-      <h3 class="card-title"><span class="dot"></span>领取电子代金券</h3>
+    <div class="card">
+      <h3 class="card-title"><span class="dot"></span>填写手机号充值</h3>
 
       <div class="form-group">
         <label>手机号码</label>
         <input type="tel" id="phoneInput" placeholder="请输入11位手机号码" maxlength="11" inputmode="numeric">
-        <div class="hint">请填写您要充值的手机号码</div>
+        <div class="hint">请填写您要充值的手机号码（中石化实名号）</div>
       </div>
 
-      <button class="btn btn-primary btn-block" id="claimBtn" onclick="claimCoupon()">
-        立即领取电子代金券
-      </button>
-
-      <div class="status-row" id="claimStatus">
-        <span class="dot"></span>
-        <span>等待操作中...</span>
-      </div>
-
-      <div style="height: 14px;"></div>
-
-      <button class="btn btn-primary btn-block" id="nextBtn1" disabled onclick="goStep(2)">
+      <button class="btn btn-primary btn-block" id="nextBtn1" onclick="goStep(2)">
         下一步
       </button>
     </div>
@@ -117,7 +101,7 @@
 
   <!-- ===== 步骤 3: 支付页面 ===== -->
   <section class="step" id="step-3">
-    <div class="card">
+    <div class="card pay-card">
       <h3 class="card-title" id="payTitle">扫码支付</h3>
 
       <div class="qr-wrap">
@@ -125,12 +109,19 @@
           <!-- 二维码图片或占位 -->
         </div>
         <div class="qr-tip">
-          请使用<span id="payAppName">微信</span>扫描二维码完成支付<br>
+          请使用 <strong id="payAppName">微信</strong> 扫描二维码完成支付
+        </div>
+        <div class="qr-amount">
           实付金额：<strong id="qrPayAmount">¥ --</strong>
         </div>
       </div>
 
+      <div class="pay-warning">
+        ⚠️ 支付完成后请务必截图保存，作为后续处理凭证
+      </div>
+
       <div class="confirm-list">
+        <div class="row"><span>订单编号</span><strong id="cfOrderId" style="font-family:monospace;font-size:12px;word-break:break-all">--</strong></div>
         <div class="row"><span>充值手机号</span><strong id="cfPhone">--</strong></div>
         <div class="row"><span>充值面额</span><strong id="cfAmount">--</strong></div>
         <div class="row"><span>支付方式</span><strong id="cfMethod">--</strong></div>
@@ -138,7 +129,7 @@
       </div>
 
       <button class="btn btn-primary btn-block" onclick="goStep(4)">
-        我已支付，下一步
+        我已支付，提交凭证
       </button>
     </div>
   </section>

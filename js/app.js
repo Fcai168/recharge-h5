@@ -123,8 +123,14 @@ async function loadSiteConfig() {
   }
 
   // 公告
-  if (cfg.announcement) {
-    document.getElementById('announcementBox').innerHTML = renderAnnouncement(cfg.announcement);
+  const box = document.getElementById('announcementBox');
+  if (box) {
+    if (cfg.announcement) {
+      box.innerHTML = renderAnnouncement(cfg.announcement);
+    } else {
+      // 没拉到公告时显示默认
+      box.innerHTML = renderAnnouncement(DEFAULT_CONFIG.announcement);
+    }
   }
 
   // 动态折扣标识
@@ -205,14 +211,6 @@ function goHome() {
   localStorage.removeItem(STORAGE_KEY_ORDER);
   document.getElementById('phoneInput').value = '';
   document.getElementById('phoneInput').disabled = false;
-  document.getElementById('nextBtn1').disabled = true;
-  document.getElementById('claimBtn').disabled = false;
-  document.getElementById('claimBtn').textContent = '立即领取电子代金券';
-  document.getElementById('claimBtn').style.display = '';
-  document.getElementById('couponClaimedBadge').style.display = 'none';
-  setClaimStatus('waiting');
-  // 展示 4a 而不是 1（4a 上传页面可以选择）
-  // 这里回到首页
   document.getElementById('step-4a').classList.remove('active');
   document.getElementById('step-4b').classList.remove('active');
   document.getElementById('step-4c').classList.remove('active');
@@ -222,38 +220,10 @@ function goHome() {
   document.getElementById('nextBtn2').disabled = true;
   document.querySelectorAll('.amount-card').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('.pay-method').forEach(el => el.classList.remove('selected'));
-
   showStep('1');
 }
 
-function setClaimStatus(type, text) {
-  const el = document.getElementById('claimStatus');
-  el.classList.remove('success');
-  if (type === 'success') {
-    el.classList.add('success');
-    el.innerHTML = '<span class="dot"></span><span>' + (text || '领取成功') + '</span>';
-  } else if (type === 'waiting') {
-    el.innerHTML = '<span class="dot"></span><span>等待操作中...</span>';
-  } else {
-    el.innerHTML = '<span class="dot"></span><span>' + text + '</span>';
-  }
-}
-
-// ---------- 步骤 1: 领取 ----------
-function claimCoupon() {
-  const phone = document.getElementById('phoneInput').value.trim();
-  if (!/^1[3-9]\d{9}$/.test(phone)) {
-    alert('请输入正确的 11 位手机号码');
-    return;
-  }
-  // 模拟领取
-  const btn = document.getElementById('claimBtn');
-  btn.disabled = true;
-  btn.textContent = '领取中...';
-  setTimeout(() => {
-    state.phone = phone;
-    setClaimStatus('success', '代金券领取成功！');
-    document.getElementById('nextBtn1').disabled = false;
+// ---------- 步骤 1: 输入手机号直接进入 ----------
     document.getElementById('nextBtn1').classList.add('btn-primary');
     // 显示右上角浮动徽章"代金券已领取！"
     document.getElementById('couponClaimedBadge').style.display = 'flex';
@@ -281,7 +251,7 @@ function goStep(n) {
     if (!state.phone) {
       const phone = document.getElementById('phoneInput').value.trim();
       if (!/^1[3-9]\d{9}$/.test(phone)) {
-        alert('请先输入手机号码并领取代金券');
+        alert('请先输入正确的 11 位手机号码');
         return;
       }
       state.phone = phone;
@@ -339,6 +309,11 @@ function selectAmount(a) {
   const target = document.querySelector(`.amount-card[data-value="${a.value}"]`);
   if (target) target.classList.add('selected');
 
+  // 生成订单号
+  if (!state.orderId) state.orderId = 'ORD' + Date.now() + Math.floor(Math.random() * 1000);
+  const orderIdEl = document.getElementById('sumOrderId');
+  if (orderIdEl) orderIdEl.textContent = state.orderId;
+
   const cfg = getConfig();
   const price = getAmtPrice(a, cfg);
   const discount = (a.value - price).toFixed(0);
@@ -346,7 +321,6 @@ function selectAmount(a) {
   document.getElementById('sumDiscount').textContent = '- ¥ ' + discount;
   document.getElementById('sumPay').textContent = '¥ ' + price;
 
-  // 检查支付方式是否已选
   updateNextBtn2();
 }
 
@@ -386,6 +360,8 @@ function renderPayment() {
   document.getElementById('cfAmount').textContent = state.selectedAmount.value + ' 元';
   document.getElementById('cfMethod').textContent = state.payMethod === 'wechat' ? '微信支付' : '支付宝';
   document.getElementById('cfPay').textContent = '¥ ' + price;
+  const cfOrderId = document.getElementById('cfOrderId');
+  if (cfOrderId) cfOrderId.textContent = state.orderId || '--';
 }
 
 // 占位二维码（视觉占位）

@@ -135,9 +135,10 @@ img { max-width: 100%; display: block; }
   margin-bottom: 14px;
   font-size: 13.5px;
   line-height: 1.75;
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
   color: #333333;
+  min-height: 60px;
 }
 .announcement::-webkit-scrollbar { width: 4px; }
 .announcement::-webkit-scrollbar-thumb { background: rgba(212,165,116,0.3); border-radius: 2px; }
@@ -540,6 +541,7 @@ img { max-width: 100%; display: block; }
 }
 .qr-box {
   width: 200px; height: 200px;
+  max-width: 100%;
   background: #fff;
   border-radius: 8px;
   padding: 10px;
@@ -551,16 +553,37 @@ img { max-width: 100%; display: block; }
   object-fit: contain;
 }
 .qr-tip {
-  font-size: 12.5px;
+  font-size: 13px;
   color: #5a6b7d;
   text-align: center;
   line-height: 1.7;
+  margin-bottom: 4px;
 }
-.qr-tip strong {
+.qr-tip strong { color: #2c3e50; }
+.qr-amount {
+  text-align: center;
+  font-size: 13px;
+  color: #5a6b7d;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.qr-amount strong {
   color: #e53935;
-  font-size: 15px;
-  margin: 0 3px;
+  font-size: 22px;
+  font-weight: 700;
+  margin-left: 4px;
 }
+.pay-warning {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: #d46b08;
+  margin: 12px 0;
+  text-align: center;
+}
+.pay-card .confirm-list { margin-top: 0; }
 
 .confirm-list {
   background: #ffffff;
@@ -764,7 +787,7 @@ img { max-width: 100%; display: block; }
   color: #fff;
 }
 .result-icon.success { background: linear-gradient(135deg, #4caf50 0%, #81c784 100%); }
-.result-icon.fail { background: linear-gradient(135deg, #d84315 0%, #f7b733 100%); }
+.result-icon.fail { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35); }
 .result-title {
   font-size: 20px;
   font-weight: 700;

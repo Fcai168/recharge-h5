@@ -95,11 +95,15 @@ img { max-width: 100%; display: block; }
   margin-top: 16px;
 }
 
+:root { --max-content-width: 100%; }
+
 /* ===== 主体布局 (手机) ===== */
 .layout {
   display: none;
   min-height: 100vh;
   flex-direction: column;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 .layout.active { display: flex; }
 
@@ -116,6 +120,8 @@ img { max-width: 100%; display: block; }
   height: auto;
   min-height: 64px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .sidebar .brand { display: none; }
 .sidebar nav {
@@ -193,8 +199,15 @@ img { max-width: 100%; display: block; }
   text-overflow: ellipsis;
 }
 .topbar .crumb strong { color: #2c3e50; }
-.topbar .actions { display: flex; gap: 6px; align-items: center; }
+.topbar .actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .topbar .actions .btn { padding: 4px 10px; font-size: 12px; }
+
+.content {
+  padding: 14px;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+}
 
 .content {
   flex: 1;
@@ -431,8 +444,18 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+td { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+td code { word-break: break-all; }
 tbody tr:active { background: #fafbfc; }
 td .actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* 图片缩略图 */
+.voucher-thumb {
+  width: 36px; height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  cursor: pointer;
+}
 
 /* 状态标签 */
 .tag {
@@ -587,62 +610,64 @@ td .actions { display: flex; gap: 4px; flex-wrap: wrap; }
   font-family: -apple-system, monospace;
 }
 
-/* 金额项 */
+/* 金额项 - 单行紧凑布局 */
 .amount-item {
-  margin-bottom: 8px;
-  padding: 10px 12px;
+  margin-bottom: 6px;
   background: #fafbfc;
-  border-radius: 8px;
   border: 1px solid #f0f2f5;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
-.amount-item .amt-row {
+.amount-item:hover { background: #f5f7fa; border-color: #e4e7ec; }
+.amount-item .amt-row-main {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
+  gap: 8px;
+  padding: 10px 12px;
   flex-wrap: wrap;
 }
-.amount-item .amt-row:last-child { margin-bottom: 0; }
 .amount-item .amt-label {
+  color: #5a6b7d;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 42px;
+}
+.amount-item input.amt-value,
+.amount-item input.amt-price-input {
+  width: 80px;
+  padding: 5px 8px;
+  border: 1px solid #d8dde3;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #fff;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.amount-item input.amt-value:focus,
+.amount-item input.amt-price-input:focus {
+  outline: none;
+  border-color: #5b9bd5;
+  box-shadow: 0 0 0 2px rgba(91,155,213,0.12);
+}
+.amount-item .amt-suffix {
   color: #8a9aab;
   font-size: 12px;
-  min-width: 60px;
+  margin-right: 4px;
 }
-.amount-item .amt-row-voucher {
-  padding: 4px 8px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+.amount-item .amt-auto {
+  margin-left: auto;
+  color: #8a9aab;
+  font-size: 11.5px;
+  background: #fff;
+  border: 1px dashed #d8e4ee;
+  padding: 2px 8px;
   border-radius: 4px;
-  border-left: 3px solid #d97706;
+  font-variant-numeric: tabular-nums;
 }
-.amount-item .amt-label-voucher {
-  color: #b45309;
-  font-weight: 600;
-}
-.amount-item .amt-price {
-  color: #b91c1c;
-  font-size: 16px;
-  font-weight: 700;
-}
-.amount-item .amt-price strong {
-  font-size: 18px;
-  background: linear-gradient(135deg, #b91c1c 0%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.amount-item .amt-row-actions {
-  border-top: 1px dashed #e4e7ec;
-  padding-top: 8px;
-  margin-top: 4px;
-  justify-content: space-between;
-}
-.amount-item .amt-row-actions label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  font-size: 12.5px;
-  margin-left: 0;
+.amount-item .amt-delete {
+  padding: 4px 10px;
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 /* ===== 超小屏适配 (≤360px) ===== */
