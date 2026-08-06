@@ -1,39 +1,5 @@
-// =====================================================
-// Cloudflare Pages Functions · /api/config
-// =====================================================
-// 从环境变量读取 Supabase 凭据并暴露给前端
-// 前端调用：fetch('/api/config').then(r => r.json())
-// 返回：{ supabaseUrl, supabaseAnonKey }
-// =====================================================
-
-export async function onRequestGet(context) {
-  // 从 Cloudflare Pages 环境变量读取（这些值不会出现在前端代码中）
-  const supabaseUrl = context.env.SUPABASE_URL || '';
-  const supabaseAnonKey = context.env.SUPABASE_ANON_KEY || '';
-
-  return new Response(JSON.stringify({
-    supabaseUrl,
-    supabaseAnonKey,
-    // 也可以加更多配置项
-    siteName: '易捷加油',
-    version: '1.0.0'
-  }), {
-    headers: {
-      'Content-Type': 'application/json',
-      // 缓存 5 分钟，减少函数调用
-      'Cache-Control': 'public, max-age=300',
-      // CORS（如果跨域访问）
-      'Access-Control-Allow-Origin': '*',
-    },
-  });
-}
-
-export async function onRequestOptions() {
-  return new Response(null, {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+// 此文件已废弃，前端直接使用 js/supabase.js 调用 Supabase REST API
+// 保留空导出避免构建错误
+export async function onRequestGet() {
+  return new Response('{}', { headers: { 'Content-Type': 'application/json' } });
 }

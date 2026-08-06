@@ -93,7 +93,12 @@ async function loadSiteConfig() {
   if (typeof USE_SUPABASE !== 'undefined' && USE_SUPABASE) {
     try {
       const dbCfg = await dbGetConfig();
-      if (dbCfg) { cfg = dbConfigToJsConfig(dbCfg); _remoteConfig = cfg; }
+      if (dbCfg) {
+        cfg = dbConfigToJsConfig(dbCfg);
+        _remoteConfig = cfg;
+        // 同步写入 localStorage 作为缓存（Supabase 不可用时 fallback）
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(cfg));
+      }
     } catch (e) { console.error('[Config] 远程配置加载失败，回退本地', e); }
   }
   if (!cfg) cfg = getConfig();
@@ -120,6 +125,13 @@ async function loadSiteConfig() {
   // 公告
   if (cfg.announcement) {
     document.getElementById('announcementBox').innerHTML = renderAnnouncement(cfg.announcement);
+  }
+
+  // 动态折扣标识
+  const badge = document.getElementById('discountBadge');
+  if (badge && cfg.discountRate) {
+    const discount = (cfg.discountRate * 10).toFixed(1);
+    badge.textContent = '限时 ' + discount + ' 折';
   }
 }
 

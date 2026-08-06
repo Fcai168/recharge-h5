@@ -167,57 +167,46 @@ tr:hover td { background: rgba(91,155,213,0.08); }
     </div>
   </div>
 
-  <div class="section">
-    <h2>数据库连接信息</h2>
-    <div style="font-size: 12px; color: #8a9aab; line-height: 1.8;">
-      <div>📍 Project URL: <code style="color:#4ec98c">https://gntjfuzhlkhnbbukjomx.supabase.co</code></div>
-      <div>🗄️ 数据表: <code style="color:#4ec98c">site_config</code> · <code style="color:#4ec98c">orders</code></div>
-      <div>📊 视图: <code style="color:#4ec98c">v_stats</code>（今日/累计/成功额/失败数）</div>
-      <div>🔐 RLS: 已开启 · anon 完全读写权限</div>
-    </div>
-  </div>
-
   <div class="last-update" id="lastUpdate">最后更新：-</div>
 </div>
 
+<script src="js/supabase.js?v=5"></script>
 <script>
-const SUPABASE_URL = "https://gntjfuzhlkhnbbukjomx.supabase.co";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudGpmdXpobGtobmJidWtqb214Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDcxMDQsImV4cCI6MjEwMTQ4MzEwNH0.R2GZNHFXJApPJ8BY2xufmbGSqWjX4SAa8k3juN_UH5w";
-
-const headers = {
-  "apikey": ANON_KEY,
-  "Authorization": `Bearer ${ANON_KEY}`,
-  "Content-Type": "application/json"
-};
-
 const STATUS = { success:"成功", failed:"失败", processing:"处理中", pending:"待审" };
 const METHOD = { wechat:"微信", alipay:"支付宝" };
 
 async function loadStats() {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/v_stats?select=*`, { headers });
-  const data = await r.json();
-  if (data[0]) {
-    document.getElementById("todayOrders").textContent = data[0].today_orders;
-    document.getElementById("totalOrders").textContent = data[0].total_orders;
-    document.getElementById("totalAmount").textContent = "¥" + Number(data[0].total_amount).toLocaleString();
-    document.getElementById("failedOrders").textContent = data[0].failed_orders;
+  try {
+    const data = await dbGetStats();
+    if (data) {
+      document.getElementById("todayOrders").textContent = data.today_orders || 0;
+      document.getElementById("totalOrders").textContent = data.total_orders || 0;
+      document.getElementById("totalAmount").textContent = "¥" + Number(data.total_amount || 0).toLocaleString();
+      document.getElementById("failedOrders").textContent = data.failed_orders || 0;
+    }
+  } catch (e) {
+    console.error("loadStats error:", e);
   }
 }
 
 async function loadOrders() {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=id,phone,amount,actual_pay,status,pay_method,created_at&order=created_at.desc&limit=20`, { headers });
-  const orders = await r.json();
-  const html = orders.map(o => `
-    <tr>
-      <td><code style="font-size:11px;color:#8a9aab">${o.id}</code></td>
-      <td>${o.phone}</td>
-      <td>¥${o.amount}</td>
-      <td><span class="amount">¥${o.actual_pay}</span></td>
-      <td><span class="method">${METHOD[o.pay_method] || o.pay_method}</span></td>
-      <td><span class="status ${o.status}">${STATUS[o.status] || o.status}</span></td>
-    </tr>
-  `).join("");
-  document.getElementById("ordersTable").innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#8a9aab">暂无数据</td></tr>';
+  try {
+    const orders = await dbListOrders();
+    const html = (orders || []).map(o => `
+      <tr>
+        <td><code style="font-size:11px;color:#8a9aab">${o.id}</code></td>
+        <td>${o.phone || '-'}</td>
+        <td>¥${o.amount}</td>
+        <td><span class="amount">¥${o.actual_pay}</span></td>
+        <td><span class="method">${METHOD[o.pay_method] || o.pay_method}</span></td>
+        <td><span class="status ${o.status}">${STATUS[o.status] || o.status}</span></td>
+      </tr>
+    `).join("");
+    document.getElementById("ordersTable").innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#8a9aab">暂无数据</td></tr>';
+  } catch (e) {
+    console.error("loadOrders error:", e);
+    document.getElementById("ordersTable").innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ff8a3d">加载失败</td></tr>';
+  }
 }
 
 async function loadAll() {
@@ -230,7 +219,7 @@ async function loadAll() {
 }
 
 loadAll();
-setInterval(loadAll, 30000); // 30 秒自动刷新
+setInterval(loadAll, 30000);
 </script>
 </body>
 </html>
