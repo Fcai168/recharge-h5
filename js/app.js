@@ -41,12 +41,17 @@ const DEFAULT_CONFIG = {
 };
 
 function getConfig() {
+  // 优先用 Supabase 远程配置（后台保存的实时数据）
+  if (_remoteConfig) {
+    return { ...DEFAULT_CONFIG, ..._remoteConfig, amounts: _remoteConfig.amounts || JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (!raw) return _remoteConfig ? { ...DEFAULT_CONFIG, ..._remoteConfig } : { ...DEFAULT_CONFIG };
-    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+    if (!raw) return { ...DEFAULT_CONFIG, amounts: JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULT_CONFIG, ...parsed, amounts: parsed.amounts || JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
   } catch (e) {
-    return { ...DEFAULT_CONFIG };
+    return { ...DEFAULT_CONFIG, amounts: JSON.parse(JSON.stringify(DEFAULT_CONFIG.amounts)) };
   }
 }
 
