@@ -202,61 +202,6 @@ function loadConfigToForm() {
   setImagePreview('banner', cfg.banner);
   setImagePreview('wechat', cfg.wechatQR);
   setImagePreview('alipay', cfg.alipayQR);
-
-  // 公告预览
-  if ($('announcementPreview')) {
-    previewAnnouncement();
-  }
-}
-
-// ---------- 公告预览 ----------
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text == null ? '' : text;
-  return div.innerHTML;
-}
-function parseAnnouncement(text) {
-  const lines = String(text || '').split('\n').map(l => l.trim());
-  const result = { title: '', sections: [] };
-  let i = 0;
-  while (i < lines.length && !lines[i]) i++;
-  if (i >= lines.length) return result;
-  result.title = lines[i];
-  i++;
-  let current = null;
-  for (; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) continue;
-    if (line.startsWith('·') || line.startsWith('•') || line.startsWith('-')) {
-      if (!current) current = { title: '', items: [] };
-      current.items.push(line.replace(/^[·•\-]\s*/, ''));
-    } else {
-      if (current && (current.title || current.items.length)) result.sections.push(current);
-      current = { title: line, items: [] };
-    }
-  }
-  if (current && (current.title || current.items.length)) result.sections.push(current);
-  return result;
-}
-function renderAnnouncementHTML(text) {
-  const p = parseAnnouncement(text);
-  let html = '';
-  if (p.title) html += `<h3>${escapeHtml(p.title)}</h3>`;
-  p.sections.forEach(sec => {
-    if (sec.title) html += `<h4>${escapeHtml(sec.title)}</h4>`;
-    if (sec.items.length) {
-      html += '<ul>';
-      sec.items.forEach(it => { html += `<li>${escapeHtml(it)}</li>`; });
-      html += '</ul>';
-    }
-  });
-  return html;
-}
-function previewAnnouncement() {
-  const el = $('announcementPreview');
-  if (!el) return;
-  const text = $('cfgAnnouncement').value;
-  el.innerHTML = renderAnnouncementHTML(text);
 }
 
 function setImagePreview(type, src) {

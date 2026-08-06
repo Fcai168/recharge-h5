@@ -170,7 +170,7 @@
           <h3 class="card-title">公告内容</h3>
           <div class="form-group">
             <label>公告文字</label>
-            <textarea id="cfgAnnouncement" rows="13" placeholder="请输入公告内容..." oninput="previewAnnouncement()"></textarea>
+            <textarea id="cfgAnnouncement" rows="13" placeholder="请输入公告内容..."></textarea>
             <div class="hint">
               格式说明：<br>
               • 第 1 行 = 主标题（粗体居中显示）<br>
@@ -182,10 +182,6 @@
           <div class="form-actions">
             <button class="btn btn-primary" onclick="saveConfig()">保存设置</button>
           </div>
-        </div>
-        <div class="card">
-          <h3 class="card-title">实时预览</h3>
-          <div class="announcement" id="announcementPreview" style="background:#fef5e7; border-left:4px solid #f39800; border-radius:6px; padding:14px 16px;"></div>
         </div>
       </div>
 
@@ -362,7 +358,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="js/supabase.js?v=5"></script>
-<script src="js/admin.js?v=5"></script>
+<script src="js/supabase.js?v=6"></script>
+<script src="js/admin.js?v=6"></script>
 </body>
 </html>
