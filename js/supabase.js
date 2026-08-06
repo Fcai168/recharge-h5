@@ -1,62 +1,55 @@
 // =====================================================
-// Supabase 客户端配置（待用户填入凭据后启用）
+// Supabase 数据访问层（直接使用 REST API，不依赖 SDK CDN）
 // =====================================================
-// 1. 引入 SDK（在 HTML <head>）：
-//    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-//
-// 2. 填入 Supabase Dashboard → Project Settings → API 中的：
-//    - Project URL
-//    - anon public key
-//
-// 3. 详情见 supabase/README.md
+// 使用 fetch 直接调用 Supabase REST API，无需加载外部 SDK
 // =====================================================
 
 const SUPABASE_CONFIG = {
   url: 'https://gntjfuzhlkhnbbukjomx.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdudGpmdXpobGtobmJidWtqb214Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5MDcxMDQsImV4cCI6MjEwMTQ4MzEwNH0.R2GZNHFXJApPJ8BY2xufmbGSqWjX4SAa8k3juN_UH5w',
-  serviceKey: '',
 };
 
-// 创建客户端
-let supabase = null;
-let USE_SUPABASE = false;
+// 直接启用，不依赖 SDK
+let USE_SUPABASE = true;
 
-function initSupabase() {
-  if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) return;
-  if (typeof window.supabase === 'undefined') return;
-  supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-  USE_SUPABASE = true;
-  console.log('[Supabase] 已连接:', SUPABASE_CONFIG.url);
-}
-
-// 页面加载时尝试初始化
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initSupabase);
-} else {
-  initSupabase();
+// 通用请求封装
+async function sbFetch(path, options = {}) {
+  const url = SUPABASE_CONFIG.url + '/rest/v1/' + path;
+  const headers = {
+    'apikey': SUPABASE_CONFIG.anonKey,
+    'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+  const resp = await fetch(url, { ...options, headers });
+  if (resp.status === 204 || resp.status === 205) return null;
+  const text = await resp.text();
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (e) { data = text; }
+  }
+  if (!resp.ok) {
+    const errMsg = (data && (data.message || data.error || JSON.stringify(data))) || ('HTTP ' + resp.status);
+    throw new Error(errMsg);
+  }
+  return data;
 }
 
 // =====================================================
-// 数据访问层（async，未启用时返回 null）
+// 数据访问层
 // =====================================================
 
 async function dbGetConfig() {
   if (!USE_SUPABASE) return null;
   try {
-    const { data, error } = await supabase
-      .from('site_config')
-      .select('*')
-      .eq('id', 1)
-      .single();
-    if (error) { console.error('[Supabase] dbGetConfig:', error); return null; }
-    return data;
-  } catch (e) { console.error(e); return null; }
+    const data = await sbFetch('site_config?id=eq.1&limit=1');
+    return (data && data.length > 0) ? data[0] : null;
+  } catch (e) { console.error('[Supabase] dbGetConfig:', e); return null; }
 }
 
 async function dbUpdateConfig(cfg) {
   if (!USE_SUPABASE) return null;
   try {
-    // 转换字段名为 snake_case
     const dbCfg = {
       logo: cfg.logo,
       banner: cfg.banner,
@@ -68,52 +61,46 @@ async function dbUpdateConfig(cfg) {
       discount_rate: cfg.discountRate,
       amounts: cfg.amounts,
     };
-    const { data, error } = await supabase
-      .from('site_config')
-      .update(dbCfg)
-      .eq('id', 1)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const data = await sbFetch('site_config?id=eq.1', {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(dbCfg),
+    });
+    return (data && data.length > 0) ? data[0] : null;
   } catch (e) { console.error('[Supabase] dbUpdateConfig:', e); throw e; }
 }
 
 async function dbCreateOrder(order) {
   if (!USE_SUPABASE) return null;
   try {
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({
-        id: order.id,
-        phone: order.phone,
-        amount: order.amount,
-        actual_pay: order.actualPay,
-        discount_rate: order.discountRate,
-        pay_method: order.payMethod,
-        status: order.status,
-        voucher: order.voucher,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const payload = {
+      id: order.id,
+      phone: order.phone,
+      amount: order.amount,
+      actual_pay: order.actualPay,
+      discount_rate: order.discountRate,
+      pay_method: order.payMethod,
+      status: order.status,
+      voucher: order.voucher,
+    };
+    const data = await sbFetch('orders', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload),
+    });
+    return (data && data.length > 0) ? data[0] : null;
   } catch (e) { console.error('[Supabase] dbCreateOrder:', e); throw e; }
 }
 
 async function dbListOrders(filter = {}) {
   if (!USE_SUPABASE) return [];
   try {
-    let query = supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (filter.status) query = query.eq('status', filter.status);
+    let path = 'orders?order=created_at.desc&limit=500';
+    if (filter.status) path += '&status=eq.' + encodeURIComponent(filter.status);
     if (filter.search) {
-      query = query.or(`id.ilike.%${filter.search}%,phone.ilike.%${filter.search}%`);
+      path += '&or=(id.ilike.*' + encodeURIComponent(filter.search) + '*,phone.ilike.*' + encodeURIComponent(filter.search) + '*)';
     }
-    const { data, error } = await query;
-    if (error) throw error;
+    const data = await sbFetch(path);
     return data || [];
   } catch (e) { console.error('[Supabase] dbListOrders:', e); return []; }
 }
@@ -121,22 +108,21 @@ async function dbListOrders(filter = {}) {
 async function dbUpdateOrderStatus(id, status, failReason) {
   if (!USE_SUPABASE) return null;
   try {
-    const { data, error } = await supabase
-      .from('orders')
-      .update({ status, fail_reason: failReason })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const payload = { status };
+    if (failReason) payload.fail_reason = failReason;
+    const data = await sbFetch('orders?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload),
+    });
+    return (data && data.length > 0) ? data[0] : null;
   } catch (e) { console.error('[Supabase] dbUpdateOrderStatus:', e); throw e; }
 }
 
 async function dbGetStats() {
   if (!USE_SUPABASE) return null;
   try {
-    const { data, error } = await supabase.from('v_stats').select('*').single();
-    if (error) throw error;
-    return data;
+    const data = await sbFetch('v_stats?limit=1');
+    return (data && data.length > 0) ? data[0] : null;
   } catch (e) { console.error('[Supabase] dbGetStats:', e); return null; }
 }
