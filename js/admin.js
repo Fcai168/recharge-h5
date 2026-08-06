@@ -323,9 +323,13 @@ function saveConfig() {
     const amounts = [];
     $('amountsList').querySelectorAll('.amount-item').forEach(item => {
       const v = parseInt(item.querySelector('.amt-value').value);
+      const pEl = item.querySelector('.amt-price-input');
+      const p = pEl ? parseFloat(pEl.value) : 0;
       const avail = item.querySelector('.amt-avail').checked;
       if (v > 0) {
-        amounts.push({ value: v, available: avail, restocking: !avail });
+        const entry = { value: v, available: avail, restocking: !avail };
+        if (p > 0) entry.price = p;
+        amounts.push(entry);
       }
     });
     if (amounts.length > 0) cfg.amounts = amounts;
@@ -542,7 +546,8 @@ function renderAmountsList() {
   const cfg = getConfig();
   const wrap = $('amountsList');
   wrap.innerHTML = cfg.amounts.map((a, i) => {
-    const price = a.value && cfg.discountRate ? (a.value * cfg.discountRate).toFixed(0) : 0;
+    const auto = a.value && cfg.discountRate ? (a.value * cfg.discountRate).toFixed(0) : 0;
+    const price = (a.price != null && a.price > 0) ? a.price : auto;
     return `
     <div class="amount-item" data-idx="${i}">
       <div class="amt-row">
@@ -552,14 +557,16 @@ function renderAmountsList() {
       </div>
       <div class="amt-row amt-row-voucher">
         <span class="amt-label amt-label-voucher">代金券金额</span>
-        <span class="amt-price" data-idx="${i}">¥ <strong>${price}</strong></span>
-        <span style="color:#8a9aab; font-size:11px">（8.5折后）</span>
+        <input type="number" class="amt-price-input" value="${price}" oninput="markAmtPriceCustom(${i})" style="width:100px; padding:6px 8px; border:1px solid #d8dde3; border-radius:6px; font-size:13px;">
+        <span style="color:#8a9aab">元</span>
+        <span style="color:#8a9aab; font-size:11px; margin-left:8px">自动: ¥ ${auto}</span>
       </div>
       <div class="amt-row amt-row-actions">
         <label style="display:flex; align-items:center; gap:4px; cursor:pointer; font-size:12.5px;">
           <input type="checkbox" class="amt-avail" ${a.available ? 'checked' : ''}>
           <span>可购买</span>
         </label>
+        <button class="btn btn-sm" onclick="resetAmtPrice(${i})" type="button" style="margin-right:auto">恢复自动</button>
         <button class="btn btn-sm btn-danger" onclick="removeAmount(${i})">删除</button>
       </div>
     </div>
@@ -573,9 +580,35 @@ function updateAmtPrice(idx) {
   const item = items[idx];
   if (!item) return;
   const v = parseFloat(item.querySelector('.amt-value').value) || 0;
-  const price = (v * (cfg.discountRate || 0.85)).toFixed(0);
-  const priceEl = item.querySelector('.amt-price strong');
-  if (priceEl) priceEl.textContent = price;
+  const auto = (v * (cfg.discountRate || 0.85)).toFixed(0);
+  const priceEl = item.querySelector('.amt-price-input');
+  const hintEl = item.querySelector('.amt-row-voucher');
+  if (priceEl && !priceEl.dataset.custom) {
+    priceEl.value = auto;
+  }
+  if (hintEl) hintEl.querySelector('span:last-child').textContent = '自动: ¥ ' + auto;
+}
+
+function markAmtPriceCustom(idx) {
+  const items = document.querySelectorAll('.amount-item');
+  const item = items[idx];
+  if (!item) return;
+  const priceEl = item.querySelector('.amt-price-input');
+  if (priceEl) priceEl.dataset.custom = '1';
+}
+
+function resetAmtPrice(idx) {
+  const cfg = getConfig();
+  const items = document.querySelectorAll('.amount-item');
+  const item = items[idx];
+  if (!item) return;
+  const v = parseFloat(item.querySelector('.amt-value').value) || 0;
+  const auto = (v * (cfg.discountRate || 0.85)).toFixed(0);
+  const priceEl = item.querySelector('.amt-price-input');
+  if (priceEl) {
+    priceEl.value = auto;
+    delete priceEl.dataset.custom;
+  }
 }
 
 function addAmount() {

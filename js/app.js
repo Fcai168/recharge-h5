@@ -285,15 +285,21 @@ function goStep(n) {
 }
 
 // ---------- 步骤 2: 金额选择 ----------
+function getAmtPrice(a, cfg) {
+  if (a.price != null && a.price > 0) return Number(a.price);
+  return Math.round(a.value * (cfg.discountRate || 0.85));
+}
+
 function renderAmounts() {
   const cfg = getConfig();
   const grid = document.getElementById('amountGrid');
   grid.innerHTML = '';
   cfg.amounts.forEach((a, idx) => {
-    const price = (a.value * cfg.discountRate).toFixed(0);
+    const price = getAmtPrice(a, cfg);
     const div = document.createElement('div');
     div.className = 'amount-card' + (a.available ? '' : ' disabled');
     div.dataset.value = a.value;
+    div.dataset.price = price;
     div.innerHTML = `
       ${!a.available ? '<span class="stock-tag">补货中</span>' : ''}
       <div class="value">${a.value}<small> 元</small></div>
@@ -317,8 +323,8 @@ function selectAmount(a) {
   if (target) target.classList.add('selected');
 
   const cfg = getConfig();
-  const price = (a.value * cfg.discountRate).toFixed(0);
-  const discount = (a.value - parseFloat(price)).toFixed(0);
+  const price = getAmtPrice(a, cfg);
+  const discount = (a.value - price).toFixed(0);
   document.getElementById('sumAmount').textContent = '¥ ' + a.value;
   document.getElementById('sumDiscount').textContent = '- ¥ ' + discount;
   document.getElementById('sumPay').textContent = '¥ ' + price;
@@ -342,7 +348,7 @@ function updateNextBtn2() {
 // ---------- 步骤 3: 支付 ----------
 function renderPayment() {
   const cfg = getConfig();
-  const price = (state.selectedAmount.value * cfg.discountRate).toFixed(0);
+  const price = getAmtPrice(state.selectedAmount, cfg);
 
   document.getElementById('payTitle').textContent = state.payMethod === 'wechat' ? '微信支付' : '支付宝支付';
   document.getElementById('payAppName').textContent = state.payMethod === 'wechat' ? '微信' : '支付宝';
@@ -478,7 +484,7 @@ function submitVoucher() {
 
 function saveOrder(status) {
   const cfg = getConfig();
-  const price = (state.selectedAmount.value * cfg.discountRate).toFixed(0);
+  const price = getAmtPrice(state.selectedAmount, cfg);
   if (!state.orderId) {
     state.orderId = 'ORD' + Date.now() + Math.floor(Math.random()*1000);
   }
